@@ -11,7 +11,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "tb_user")
+@Table(name = "tb_users")
 @Getter
 @Setter
 @Builder
