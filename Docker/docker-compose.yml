@@ -3,6 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:latest
+    restart: always
     ports:
       - "5432:5432"
     expose:
@@ -11,3 +12,8 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=manager
       - POSTGRES_DB=securitydb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata: 
