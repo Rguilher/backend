@@ -39,7 +39,6 @@ public class User implements UserDetails {
     private String phone;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private UserRole role;
 
     @Override
@@ -47,7 +46,6 @@ public class User implements UserDetails {
 
         var authorities = new HashSet<SimpleGrantedAuthority>();
         authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-
         if (this.role == UserRole.ADMIN){
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
             authorities.add(new SimpleGrantedAuthority("ROLE_PROFESSIONAL"));
