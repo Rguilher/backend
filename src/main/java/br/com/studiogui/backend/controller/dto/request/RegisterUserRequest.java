@@ -1,6 +1,5 @@
 package br.com.studiogui.backend.controller.dto.request;
 
-import br.com.studiogui.backend.model.UserRole;
 import jakarta.validation.constraints.NotEmpty;
 
 public record RegisterUserRequest(

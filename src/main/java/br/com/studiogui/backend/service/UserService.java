@@ -1,6 +1,6 @@
 package br.com.studiogui.backend.service;
 
-import br.com.studiogui.backend.model.UserRole;
+import br.com.studiogui.backend.model.enums.UserRole;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
