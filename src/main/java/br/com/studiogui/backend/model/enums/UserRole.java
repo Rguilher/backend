@@ -1,4 +1,4 @@
-package br.com.studiogui.backend.model;
+package br.com.studiogui.backend.model.enums;
 
 import lombok.Getter;
 
