@@ -26,15 +26,13 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final UserService userService;
-    private final AuthConfigService authConfigService;
     private final AuthenticationManager authenticationManager;
     private final TokenConfig tokenConfig;
 
-    public AuthController(UserService userService, AuthConfigService authConfigService, TokenConfig tokenConfig,
+    public AuthController(UserService userService, TokenConfig tokenConfig,
         AuthenticationManager authenticationManager
     ) {
         this.userService = userService;
-        this.authConfigService = authConfigService;
         this.tokenConfig = tokenConfig;
         this.authenticationManager = authenticationManager;
     }
@@ -47,7 +45,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         
-
         UsernamePasswordAuthenticationToken userAndPass = new UsernamePasswordAuthenticationToken(request.username(), request.password());
         Authentication auth = authenticationManager.authenticate(userAndPass);
         User user = (User) auth.getPrincipal();

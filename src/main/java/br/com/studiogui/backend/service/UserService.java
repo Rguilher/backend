@@ -1,5 +1,6 @@
 package br.com.studiogui.backend.service;
 
+import br.com.studiogui.backend.model.UserRole;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class UserService {
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .phone(request.phone())
+                .role(UserRole.USER)
                 .build();
         
         return userRepository.save(user);
