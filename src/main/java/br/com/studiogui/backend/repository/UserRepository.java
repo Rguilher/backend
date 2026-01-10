@@ -9,5 +9,6 @@ import br.com.studiogui.backend.model.User;
 
 public interface UserRepository extends JpaRepository<User, Long>{
 
-    Optional<UserDetails> findUserByEmail(String username);
+    Optional<User> findUserByEmail(String username);
+    boolean existsByEmail(String email);
 }

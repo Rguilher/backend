@@ -2,9 +2,17 @@ package br.com.studiogui.backend.model;
 
 import br.com.studiogui.backend.model.enums.AppointmentStatus;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
+@Table(name = "tb_appointments")
+@Entity(name = "Appointment")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(of = "id")
 public class Appointment {
 
     @Id
@@ -24,7 +32,7 @@ public class Appointment {
 
     @ManyToOne
     @JoinColumn(name = "service_id", nullable = false)
-    private GuiServices service;
+    private SalonService service;
 
     @Column(nullable = false)
     private LocalDateTime dateTime;
