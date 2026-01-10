@@ -32,11 +32,14 @@ public class User implements UserDetails {
     @Column(name = "password_hash", nullable = false)
     private String password;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private String phone;
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    @Column(nullable = false)
+    private Boolean root = false;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

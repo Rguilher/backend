@@ -3,6 +3,7 @@ package br.com.studiogui.backend.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,12 +46,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         
-        UsernamePasswordAuthenticationToken userAndPass = new UsernamePasswordAuthenticationToken(request.username(), request.password());
+        var userAndPass = new UsernamePasswordAuthenticationToken(request.username(), request.password());
         Authentication auth = authenticationManager.authenticate(userAndPass);
-        User user = (User) auth.getPrincipal();
-        Long expiresIn = 300L;
-        String accessToken = tokenConfig.generateToken(user, expiresIn);
-        return ResponseEntity.ok(new LoginResponse(accessToken, expiresIn));
+        if (auth.getPrincipal() instanceof User user) {
+            Long expiresIn = 3600L;
+            String accessToken = tokenConfig.generateToken(user, expiresIn);
+            return ResponseEntity.ok(new LoginResponse(accessToken, expiresIn));
+        }
+        throw new BadCredentialsException("Erro ao identificar o usuário logado.");
     }
 
     @PostMapping("/register")
