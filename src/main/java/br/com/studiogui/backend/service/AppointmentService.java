@@ -14,7 +14,9 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -23,6 +25,11 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
     private final SalonServiceRepository serviceRepository;
+
+    // Constantes de Regra de Negócio (Em projeto grande, iriam para application.properties)
+    private static final int MIN_LEAD_TIME_MINUTES = 30;
+    private static final LocalTime OPENING_TIME = LocalTime.of(8, 0);
+    private static final LocalTime CLOSING_TIME = LocalTime.of(18, 0);
 
     public AppointmentService(AppointmentRepository appointmentRepository, UserRepository userRepository, SalonServiceRepository serviceRepository) {
         this.appointmentRepository = appointmentRepository;
@@ -57,19 +64,22 @@ public class AppointmentService {
 
         LocalDateTime newStart = data.startTime();
         LocalDateTime newEnd = newStart.plusMinutes(service.getDurationMin());
+        if (newStart.isBefore(LocalDateTime.now().plusMinutes(MIN_LEAD_TIME_MINUTES))) {
+            throw new IllegalArgumentException
+                    ("O agendamento deve ser feito com no mínimo " + MIN_LEAD_TIME_MINUTES + " minutos de antecedência.");
+        }
+        validateBusinessHours(newStart, newEnd);
 
-        LocalDateTime dayStart = newStart.toLocalDate().atStartOfDay(); // 00:00:00
-        LocalDateTime dayEnd = newStart.toLocalDate().atTime(23, 59, 59); // 23:59:59
+        boolean hasConflict = appointmentRepository.existsConflictingAppointment(
+                professional.getId(),
+                client.getId(),
+                newStart,
+                newEnd
+        );
 
-        List<Appointment> scheduled = appointmentRepository.findProfessionalAgenda(professional, dayStart, dayEnd);
-        for (Appointment iScheduled : scheduled) {
-            LocalDateTime existingStart = iScheduled.getDateTime();
-            LocalDateTime existingEnd = existingStart.plusMinutes(iScheduled.getService().getDurationMin());
-
-            if (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)) {
-                throw new IllegalArgumentException("Conflito de horário! O profissional já possui agendamento das "
-                        + existingStart.toLocalTime() + " às " + existingEnd.toLocalTime());
-            }
+        if (hasConflict) {
+            throw new IllegalArgumentException
+                    ("Conflito de horário! O profissional ou você já possuem agendamento neste intervalo.");
         }
 
         Appointment appointment = new Appointment();
@@ -143,5 +153,23 @@ public class AppointmentService {
                 .toLocalDate().atTime(23, 59, 59);
 
         return listByInterval(userId, start, end);
+    }
+
+    private void validateBusinessHours(LocalDateTime start, LocalDateTime end) {
+
+        if (start.getDayOfWeek() == DayOfWeek.SUNDAY || start.getDayOfWeek() == DayOfWeek.MONDAY) {
+            throw new IllegalArgumentException("O estabelecimento não abre às segundas-feiras e domingos.");
+        }
+
+        LocalTime timeStart = start.toLocalTime();
+        LocalTime timeEnd = end.toLocalTime();
+
+        if (timeStart.isBefore(OPENING_TIME)) {
+            throw new IllegalArgumentException("O estabelecimento abre às " + OPENING_TIME);
+        }
+
+        if (timeEnd.isAfter(CLOSING_TIME.plusMinutes(20))) {
+            throw new IllegalArgumentException("O estabelecimento fecha às " + CLOSING_TIME + ". O serviço deve terminar em até 20 minutos depois do fechamento!.");
+        }
     }
 }

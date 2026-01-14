@@ -36,4 +36,15 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    @Query("SELECT COUNT(a) > 0 FROM Appointment a " +
+            "WHERE (a.professional.id = :professionalId OR a.client.id = :clientId) " +
+            "AND a.status <> 'CANCELED' " +
+            "AND ((a.dateTime < :endTime) AND (a.dateTime + a.service.durationMin MINUTE > :startTime))")
+    boolean existsConflictingAppointment(
+            @Param("professionalId") Long professionalId,
+            @Param("clientId") Long clientId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
 }
