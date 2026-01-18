@@ -23,7 +23,7 @@ import br.com.studiogui.backend.service.UserService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("api/auth")
 public class AuthController {
 
     private final UserService userService;
