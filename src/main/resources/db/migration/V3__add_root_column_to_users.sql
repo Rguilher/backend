@@ -1,0 +1,6 @@
+ALTER TABLE tb_users
+    ADD COLUMN root BOOLEAN NOT NULL DEFAULT FALSE;
+
+UPDATE tb_users
+SET root = TRUE
+WHERE id = 3;
