@@ -46,4 +46,11 @@ public class UserController {
         var page = userService.findAll(pageable);
         return ResponseEntity.ok(page);
     }
+
+    @GetMapping("/profissional")
+    public ResponseEntity<Page<UserResponse>> findProfessional(
+            @PageableDefault(size = 10, sort = "name") Pageable pageable){
+        var page = userService.findProfessional(pageable);
+        return ResponseEntity.ok(page);
+    }
 }

@@ -68,4 +68,10 @@ public class UserService {
         return userRepository.findAll(pageable)
                 .map(UserResponse::new);
     }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponse> findProfessional(Pageable pageable) {
+        return userRepository.findByRole(UserRole.PROFESSIONAL ,pageable)
+                .map(UserResponse::new);
+    }
 }
