@@ -27,6 +27,17 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("end") LocalDateTime end
     );
 
+    // Retorna todos os agendamentos ativos do profissional naquele intervalo
+    @Query("SELECT a FROM Appointment a " +
+            "WHERE a.professional.id = :professionalId " +
+            "AND a.status <> 'CANCELED' " +
+            "AND a.dateTime >= :start AND a.dateTime < :end")
+    List<Appointment> findByProfessionalAndDate(
+            @Param("professionalId") Long professionalId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
     @Query("SELECT a FROM Appointment a " +
             "WHERE (a.client.id = :userId OR a.professional.id = :userId) " +
             "AND a.dateTime BETWEEN :start AND :end " +

@@ -28,7 +28,7 @@ public class SalonServiceService {
         newService.setName(request.name());
         newService.setDescription(request.description());
         newService.setPrice(request.price());
-        newService.setDurationMin(request.durationMin());
+        newService.setDurationMin(45);
         newService.setActive(true);
 
        return repository.save(newService);
