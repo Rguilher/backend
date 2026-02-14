@@ -14,12 +14,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findAllByClient(User client);
     List<Appointment> findAllByProfessional(User professional);
 
-    // 🔥 NOVO: Busca agendamentos de um profissional num intervalo de tempo (ex: no dia X)
-    // Usaremos isso para validar conflitos.
-    // "Mostre a agenda do Profissional X entre as 00:00 e as 23:59 da data tal"
     @Query("SELECT a FROM Appointment a " +
             "WHERE a.professional = :professional " +
-            "AND a.status <> 'CANCELED' " + // Ignora os cancelados (eles não ocupam vaga)
+            "AND a.status <> 'CANCELED' " +
             "AND a.dateTime BETWEEN :start AND :end")
     List<Appointment> findProfessionalAgenda(
             @Param("professional") User professional,
@@ -27,10 +24,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("end") LocalDateTime end
     );
 
-    // Retorna todos os agendamentos ativos do profissional naquele intervalo
+    // Trazemos TODOS os agendamentos do dia e filtramos no Service.
     @Query("SELECT a FROM Appointment a " +
             "WHERE a.professional.id = :professionalId " +
-            "AND a.status <> 'CANCELED' " +
             "AND a.dateTime >= :start AND a.dateTime < :end")
     List<Appointment> findByProfessionalAndDate(
             @Param("professionalId") Long professionalId,

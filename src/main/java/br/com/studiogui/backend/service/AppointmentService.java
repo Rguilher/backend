@@ -28,7 +28,6 @@ public class AppointmentService {
     private final UserRepository userRepository;
     private final SalonServiceRepository serviceRepository;
 
-    // Constantes de Regra de Negócio (Em projeto grande, iriam para application.properties)
     private static final int MIN_LEAD_TIME_MINUTES = 30;
     private static final LocalTime OPENING_TIME = LocalTime.of(8, 0);
     private static final LocalTime CLOSING_TIME = LocalTime.of(18, 0);
@@ -42,7 +41,7 @@ public class AppointmentService {
     public List<LocalTime> getAvailability(Long professionalId, Long serviceId, LocalDate date) {
 
         if (date.isBefore(LocalDate.now())) {
-            return List.of(); // Sem agenda para o passado
+            return List.of();
         }
 
         int durationMinutes = 45;
@@ -53,34 +52,35 @@ public class AppointmentService {
             }
         }
 
-        //  Buscar agendamentos JÁ existentes naquele dia
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(23, 59);
+        // Busca TUDO (Inclusive cancelados)
         List<Appointment> existingAppointments = appointmentRepository.findByProfessionalAndDate(professionalId, startOfDay, endOfDay);
 
-        //  Gerar Slots e Filtrar
         List<LocalTime> availableSlots = new ArrayList<>();
         LocalTime currentSlot = OPENING_TIME;
 
-        // Enquanto o serviço couber antes de fechar...
         while (!currentSlot.plusMinutes(durationMinutes).isAfter(CLOSING_TIME)) {
 
             LocalDateTime slotStart = date.atTime(currentSlot);
             LocalDateTime slotEnd = slotStart.plusMinutes(durationMinutes);
 
-            // Regra: Não mostrar horários que já passaram hoje (ex: agora é 10h, não mostrar 08h)
+            // Validação de horário passado
             if (slotStart.isBefore(LocalDateTime.now().plusMinutes(MIN_LEAD_TIME_MINUTES))) {
-                currentSlot = currentSlot.plusMinutes(durationMinutes); // Pula pro próximo
+                currentSlot = currentSlot.plusMinutes(durationMinutes);
                 continue;
             }
 
-            // Verifica colisão com agendamentos existentes
             boolean isBusy = false;
             for (Appointment appointment : existingAppointments) {
+                if (appointment.getStatus() == AppointmentStatus.CANCELED) {
+                    continue;
+                }
+
                 LocalDateTime appStart = appointment.getDateTime();
+                // Calcula fim baseado na duração do serviço agendado
                 LocalDateTime appEnd = appStart.plusMinutes(appointment.getService().getDurationMin());
 
-                // Lógica de Intersecção de Horários
                 if (slotStart.isBefore(appEnd) && slotEnd.isAfter(appStart)) {
                     isBusy = true;
                     break;
@@ -91,8 +91,6 @@ public class AppointmentService {
                 availableSlots.add(currentSlot);
             }
 
-            // Padrão de Mercado: Agendamentos "Encaixados" (Grid System)
-            // O próximo slot começa exatamente quando este termina.
             currentSlot = currentSlot.plusMinutes(durationMinutes);
         }
 
@@ -125,6 +123,7 @@ public class AppointmentService {
 
         LocalDateTime newStart = data.startTime();
         LocalDateTime newEnd = newStart.plusMinutes(service.getDurationMin());
+
         if (newStart.isBefore(LocalDateTime.now().plusMinutes(MIN_LEAD_TIME_MINUTES))) {
             throw new IllegalArgumentException
                     ("O agendamento deve ser feito com no mínimo " + MIN_LEAD_TIME_MINUTES + " minutos de antecedência.");
@@ -155,7 +154,6 @@ public class AppointmentService {
 
         return new AppointmentDetailResponse(appointment);
     }
-
 
     @Transactional
     public void cancelAppointment(Long appointmentId, Long userId) {
@@ -194,16 +192,14 @@ public class AppointmentService {
     }
 
     public List<AppointmentDetailResponse> listToday(Long userId) {
-        LocalDateTime start = LocalDateTime.now().toLocalDate().atStartOfDay(); // 00:00
-        LocalDateTime end = LocalDateTime.now().toLocalDate().atTime(23, 59, 59); // 23:59
-
+        LocalDateTime start = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime end = LocalDateTime.now().toLocalDate().atTime(23, 59, 59);
         return listByInterval(userId, start, end);
     }
 
     public List<AppointmentDetailResponse> listUpcomingWeek(Long userId) {
         LocalDateTime start = LocalDateTime.now();
         LocalDateTime end = start.plusDays(7).withHour(23).withMinute(59);
-
         return listByInterval(userId, start, end);
     }
 
@@ -212,12 +208,10 @@ public class AppointmentService {
         LocalDateTime start = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
         LocalDateTime end = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
                 .toLocalDate().atTime(23, 59, 59);
-
         return listByInterval(userId, start, end);
     }
 
     private void validateBusinessHours(LocalDateTime start, LocalDateTime end) {
-
         if (start.getDayOfWeek() == DayOfWeek.SUNDAY || start.getDayOfWeek() == DayOfWeek.MONDAY) {
             throw new IllegalArgumentException("O estabelecimento não abre às segundas-feiras e domingos.");
         }

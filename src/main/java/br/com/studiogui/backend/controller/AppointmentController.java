@@ -28,7 +28,7 @@ public class AppointmentController {
 
     @PostMapping
     public ResponseEntity<AppointmentDetailResponse> schedule(@RequestBody @Valid CreateAppointmentRequest request,
-            @AuthenticationPrincipal JWTUserData user) {
+                                                              @AuthenticationPrincipal JWTUserData user) {
 
         AppointmentDetailResponse response = service.schedule(request, user.userId());
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -40,7 +40,7 @@ public class AppointmentController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(@PathVariable Long id,
-            @AuthenticationPrincipal JWTUserData user) {
+                                       @AuthenticationPrincipal JWTUserData user) {
 
         service.cancelAppointment(id, user.userId());
         return ResponseEntity.noContent().build();
