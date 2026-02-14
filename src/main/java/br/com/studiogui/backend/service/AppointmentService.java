@@ -15,8 +15,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -37,6 +39,65 @@ public class AppointmentService {
         this.serviceRepository = serviceRepository;
     }
 
+    public List<LocalTime> getAvailability(Long professionalId, Long serviceId, LocalDate date) {
+
+        if (date.isBefore(LocalDate.now())) {
+            return List.of(); // Sem agenda para o passado
+        }
+
+        int durationMinutes = 45;
+        if (serviceId != null) {
+            SalonService service = serviceRepository.findById(serviceId).orElse(null);
+            if (service != null) {
+                durationMinutes = service.getDurationMin();
+            }
+        }
+
+        //  Buscar agendamentos JÁ existentes naquele dia
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(23, 59);
+        List<Appointment> existingAppointments = appointmentRepository.findByProfessionalAndDate(professionalId, startOfDay, endOfDay);
+
+        //  Gerar Slots e Filtrar
+        List<LocalTime> availableSlots = new ArrayList<>();
+        LocalTime currentSlot = OPENING_TIME;
+
+        // Enquanto o serviço couber antes de fechar...
+        while (!currentSlot.plusMinutes(durationMinutes).isAfter(CLOSING_TIME)) {
+
+            LocalDateTime slotStart = date.atTime(currentSlot);
+            LocalDateTime slotEnd = slotStart.plusMinutes(durationMinutes);
+
+            // Regra: Não mostrar horários que já passaram hoje (ex: agora é 10h, não mostrar 08h)
+            if (slotStart.isBefore(LocalDateTime.now().plusMinutes(MIN_LEAD_TIME_MINUTES))) {
+                currentSlot = currentSlot.plusMinutes(durationMinutes); // Pula pro próximo
+                continue;
+            }
+
+            // Verifica colisão com agendamentos existentes
+            boolean isBusy = false;
+            for (Appointment appointment : existingAppointments) {
+                LocalDateTime appStart = appointment.getDateTime();
+                LocalDateTime appEnd = appStart.plusMinutes(appointment.getService().getDurationMin());
+
+                // Lógica de Intersecção de Horários
+                if (slotStart.isBefore(appEnd) && slotEnd.isAfter(appStart)) {
+                    isBusy = true;
+                    break;
+                }
+            }
+
+            if (!isBusy) {
+                availableSlots.add(currentSlot);
+            }
+
+            // Padrão de Mercado: Agendamentos "Encaixados" (Grid System)
+            // O próximo slot começa exatamente quando este termina.
+            currentSlot = currentSlot.plusMinutes(durationMinutes);
+        }
+
+        return availableSlots;
+    }
 
     @Transactional
     public AppointmentDetailResponse schedule(CreateAppointmentRequest data, Long clientId) {

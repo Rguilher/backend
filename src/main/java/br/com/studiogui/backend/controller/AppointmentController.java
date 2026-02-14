@@ -5,12 +5,15 @@ import br.com.studiogui.backend.controller.dto.request.CreateAppointmentRequest;
 import br.com.studiogui.backend.controller.dto.response.AppointmentDetailResponse;
 import br.com.studiogui.backend.service.AppointmentService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -61,5 +64,15 @@ public class AppointmentController {
             @AuthenticationPrincipal JWTUserData user) {
         List<AppointmentDetailResponse> list = service.listCurrentMonth(user.userId());
         return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/availability")
+    public ResponseEntity<List<LocalTime>> getAvailability(
+            @RequestParam Long professionalId,
+            @RequestParam Long serviceId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        List<LocalTime> slots = service.getAvailability(professionalId, serviceId, date);
+        return ResponseEntity.ok(slots);
     }
 }
