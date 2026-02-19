@@ -69,10 +69,8 @@ public class AppointmentController {
     @GetMapping("/availability")
     public ResponseEntity<List<LocalTime>> getAvailability(
             @RequestParam Long professionalId,
-            @RequestParam Long serviceId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-
-        List<LocalTime> slots = service.getAvailability(professionalId, serviceId, date);
+        List<LocalTime> slots = service.getAvailability(professionalId, date);
         return ResponseEntity.ok(slots);
     }
 }
