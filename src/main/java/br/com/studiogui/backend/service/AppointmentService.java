@@ -31,6 +31,7 @@ public class AppointmentService {
     private static final int MIN_LEAD_TIME_MINUTES = 30;
     private static final LocalTime OPENING_TIME = LocalTime.of(8, 0);
     private static final LocalTime CLOSING_TIME = LocalTime.of(18, 0);
+    private static final int SLOT_DURATION_MINUTES = 45;
 
     public AppointmentService(AppointmentRepository appointmentRepository, UserRepository userRepository, SalonServiceRepository serviceRepository) {
         this.appointmentRepository = appointmentRepository;
@@ -38,49 +39,53 @@ public class AppointmentService {
         this.serviceRepository = serviceRepository;
     }
 
-    public List<LocalTime> getAvailability(Long professionalId, Long serviceId, LocalDate date) {
+    public List<LocalTime> getAvailability(Long professionalId, LocalDate date) {
 
         if (date.isBefore(LocalDate.now())) {
             return List.of();
         }
 
-        int durationMinutes = 45;
-        if (serviceId != null) {
-            SalonService service = serviceRepository.findById(serviceId).orElse(null);
-            if (service != null) {
-                durationMinutes = service.getDurationMin();
-            }
-        }
-
         LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = date.atTime(23, 59);
-        // Busca TUDO (Inclusive cancelados)
+        LocalDateTime endOfDay = date.atTime(23, 59, 59);
+
+        // Busca agendamentos existentes (Lembre-se: O Repository deve filtrar status <> CANCELED)
         List<Appointment> existingAppointments = appointmentRepository.findByProfessionalAndDate(professionalId, startOfDay, endOfDay);
 
         List<LocalTime> availableSlots = new ArrayList<>();
         LocalTime currentSlot = OPENING_TIME;
 
-        while (!currentSlot.plusMinutes(durationMinutes).isAfter(CLOSING_TIME)) {
+        // Loop fixo: Gera slots de 45 em 45 minutos até fechar o dia
+        while (!currentSlot.plusMinutes(SLOT_DURATION_MINUTES).isAfter(CLOSING_TIME)) {
 
             LocalDateTime slotStart = date.atTime(currentSlot);
-            LocalDateTime slotEnd = slotStart.plusMinutes(durationMinutes);
+            LocalDateTime slotEnd = slotStart.plusMinutes(SLOT_DURATION_MINUTES);
 
-            // Validação de horário passado
+            // 1. Validação de Passado (Hoje)
             if (slotStart.isBefore(LocalDateTime.now().plusMinutes(MIN_LEAD_TIME_MINUTES))) {
-                currentSlot = currentSlot.plusMinutes(durationMinutes);
+                currentSlot = currentSlot.plusMinutes(SLOT_DURATION_MINUTES);
                 continue;
             }
 
             boolean isBusy = false;
+
+            // 2. Verifica Colisão com Agendamentos Existentes
             for (Appointment appointment : existingAppointments) {
-                if (appointment.getStatus() == AppointmentStatus.CANCELED) {
-                    continue;
-                }
+
+                // (Opcional se o Repository já filtra, mas bom manter por segurança)
+                if (appointment.getStatus() == AppointmentStatus.CANCELED) continue;
 
                 LocalDateTime appStart = appointment.getDateTime();
-                // Calcula fim baseado na duração do serviço agendado
-                LocalDateTime appEnd = appStart.plusMinutes(appointment.getService().getDurationMin());
 
+                // Importante: A colisão considera a duração REAL do agendamento existente.
+                // Se existe um agendamento de 90min, ele vai bloquear 2 slots de 45min do loop.
+                int appDuration = (appointment.getService() != null)
+                        ? appointment.getService().getDurationMin()
+                        : SLOT_DURATION_MINUTES;
+
+                LocalDateTime appEnd = appStart.plusMinutes(appDuration);
+
+                // Lógica de Interseção:
+                // Se o slot começa antes do agendamento terminar E termina depois do agendamento começar
                 if (slotStart.isBefore(appEnd) && slotEnd.isAfter(appStart)) {
                     isBusy = true;
                     break;
@@ -91,7 +96,8 @@ public class AppointmentService {
                 availableSlots.add(currentSlot);
             }
 
-            currentSlot = currentSlot.plusMinutes(durationMinutes);
+            // Pulo fixo de 45 minutos
+            currentSlot = currentSlot.plusMinutes(SLOT_DURATION_MINUTES);
         }
 
         return availableSlots;
