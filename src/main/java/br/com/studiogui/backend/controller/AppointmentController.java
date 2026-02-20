@@ -7,6 +7,7 @@ import br.com.studiogui.backend.service.AppointmentService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -33,6 +34,20 @@ public class AppointmentController {
         AppointmentDetailResponse response = service.schedule(request, user.userId());
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+        return ResponseEntity.created(uri).body(response);
+    }
+
+    @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AppointmentDetailResponse> adminSchedule(
+            @RequestBody @Valid CreateAppointmentRequest request,
+            @RequestParam Long userId) {
+
+        AppointmentDetailResponse response = service.schedule(request, userId);
+        URI uri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/appointments/{id}")
                 .buildAndExpand(response.id())
                 .toUri();
         return ResponseEntity.created(uri).body(response);
