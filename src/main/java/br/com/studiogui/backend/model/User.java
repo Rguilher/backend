@@ -1,5 +1,6 @@
 package br.com.studiogui.backend.model;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import br.com.studiogui.backend.model.enums.UserRole;
@@ -40,6 +41,12 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private Boolean root = false;
+
+    @Column(name = "recovery_code", length = 6)
+    private String recoveryCode;
+
+    @Column(name = "recovery_code_expiry")
+    private LocalDateTime recoveryCodeExpiry;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

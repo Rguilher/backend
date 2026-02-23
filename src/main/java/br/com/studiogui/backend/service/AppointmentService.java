@@ -48,19 +48,16 @@ public class AppointmentService {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(23, 59, 59);
 
-        // Busca agendamentos existentes (Lembre-se: O Repository deve filtrar status <> CANCELED)
         List<Appointment> existingAppointments = appointmentRepository.findByProfessionalAndDate(professionalId, startOfDay, endOfDay);
 
         List<LocalTime> availableSlots = new ArrayList<>();
         LocalTime currentSlot = OPENING_TIME;
 
-        // Loop fixo: Gera slots de 45 em 45 minutos até fechar o dia
         while (!currentSlot.plusMinutes(SLOT_DURATION_MINUTES).isAfter(CLOSING_TIME)) {
 
             LocalDateTime slotStart = date.atTime(currentSlot);
             LocalDateTime slotEnd = slotStart.plusMinutes(SLOT_DURATION_MINUTES);
 
-            // 1. Validação de Passado (Hoje)
             if (slotStart.isBefore(LocalDateTime.now().plusMinutes(MIN_LEAD_TIME_MINUTES))) {
                 currentSlot = currentSlot.plusMinutes(SLOT_DURATION_MINUTES);
                 continue;
@@ -68,24 +65,18 @@ public class AppointmentService {
 
             boolean isBusy = false;
 
-            // 2. Verifica Colisão com Agendamentos Existentes
             for (Appointment appointment : existingAppointments) {
 
-                // (Opcional se o Repository já filtra, mas bom manter por segurança)
                 if (appointment.getStatus() == AppointmentStatus.CANCELED) continue;
 
                 LocalDateTime appStart = appointment.getDateTime();
 
-                // Importante: A colisão considera a duração REAL do agendamento existente.
-                // Se existe um agendamento de 90min, ele vai bloquear 2 slots de 45min do loop.
                 int appDuration = (appointment.getService() != null)
                         ? appointment.getService().getDurationMin()
                         : SLOT_DURATION_MINUTES;
 
                 LocalDateTime appEnd = appStart.plusMinutes(appDuration);
 
-                // Lógica de Interseção:
-                // Se o slot começa antes do agendamento terminar E termina depois do agendamento começar
                 if (slotStart.isBefore(appEnd) && slotEnd.isAfter(appStart)) {
                     isBusy = true;
                     break;
@@ -96,7 +87,6 @@ public class AppointmentService {
                 availableSlots.add(currentSlot);
             }
 
-            // Pulo fixo de 45 minutos
             currentSlot = currentSlot.plusMinutes(SLOT_DURATION_MINUTES);
         }
 
@@ -131,10 +121,36 @@ public class AppointmentService {
         LocalDateTime newEnd = newStart.plusMinutes(service.getDurationMin());
 
         if (newStart.isBefore(LocalDateTime.now().plusMinutes(MIN_LEAD_TIME_MINUTES))) {
-            throw new IllegalArgumentException
-                    ("O agendamento deve ser feito com no mínimo " + MIN_LEAD_TIME_MINUTES + " minutos de antecedência.");
+            throw new IllegalArgumentException("O agendamento deve ser feito com no mínimo " + MIN_LEAD_TIME_MINUTES + " minutos de antecedência.");
         }
         validateBusinessHours(newStart, newEnd);
+
+
+        LocalDateTime startOfDay = newStart.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = newStart.toLocalDate().atTime(23, 59, 59);
+
+        List<Appointment> clientAppointmentsToday = appointmentRepository
+                .findByClient_IdAndDateTimeBetween(clientId, startOfDay, endOfDay);
+
+        List<Appointment> activeAppointments = clientAppointmentsToday.stream()
+                .filter(a -> a.getStatus() != AppointmentStatus.CANCELED) // Ignora cancelados
+                .filter(a -> {
+                    boolean isPastConfirmed = a.getStatus() == AppointmentStatus.CONFIRMED
+                            && a.getDateTime().isBefore(LocalDateTime.now());
+                    return !isPastConfirmed;
+                })
+                .toList();
+
+        if (activeAppointments.size() >= 4) {
+            throw new IllegalArgumentException("Você atingiu o limite máximo de 4 agendamentos ativos para este dia.");
+        }
+
+        boolean serviceAlreadyBooked = activeAppointments.stream()
+                .anyMatch(a -> a.getService().getId().equals(service.getId()));
+
+        if (serviceAlreadyBooked) {
+            throw new IllegalArgumentException("Você já possui um agendamento para o serviço '" + service.getName() + "' nesta data.");
+        }
 
         boolean hasConflict = appointmentRepository.existsConflictingAppointment(
                 professional.getId(),
@@ -144,8 +160,7 @@ public class AppointmentService {
         );
 
         if (hasConflict) {
-            throw new IllegalArgumentException
-                    ("Conflito de horário! O profissional ou você já possuem agendamento neste intervalo.");
+            throw new IllegalArgumentException("Conflito de horário! O profissional ou você já possuem agendamento neste intervalo.");
         }
 
         Appointment appointment = new Appointment();

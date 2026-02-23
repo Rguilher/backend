@@ -13,6 +13,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findAllByClient(User client);
     List<Appointment> findAllByProfessional(User professional);
+    List<Appointment> findByClient_IdAndDateTimeBetween(Long clientId, LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT a FROM Appointment a " +
             "WHERE a.professional = :professional " +
