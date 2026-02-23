@@ -6,6 +6,7 @@ import br.com.studiogui.backend.model.enums.UserRole;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -64,9 +65,9 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<UserResponse> findAll(Pageable pageable) {
-        return userRepository.findAll(pageable)
-                .map(UserResponse::new);
+    public UserResponse findUser(String email) {
+        var user = userRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
+        return new UserResponse(user);
     }
 
     @Transactional(readOnly = true)

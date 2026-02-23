@@ -41,10 +41,9 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<UserResponse>> findAll(
-            @PageableDefault(size = 10, sort = "name") Pageable pageable) {
-        var page = userService.findAll(pageable);
-        return ResponseEntity.ok(page);
+    public ResponseEntity<UserResponse> findUser(@RequestParam("email") String email) {
+        var user = userService.findUser(email);
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping("/profissional")
@@ -53,4 +52,5 @@ public class UserController {
         var page = userService.findProfessional(pageable);
         return ResponseEntity.ok(page);
     }
+
 }
