@@ -58,15 +58,25 @@ Bash
 docker-compose -f Docker/docker-compose.yml up -d
 
 This will start a PostgreSQL instance on port 5432 with the database securitydb.
-2. Configuration
 
-The database connection is pre-configured in src/main/resources/application.properties:
+### 2. Configuration
 
-    Username: postgres
+Following security best practices, the database connection is configured using environment variables to prevent sensitive data exposure.
 
-    Password: manager
+1. Create a `.env` file in the root directory of the project.
+2. Add the following environment variables with your local database credentials:
 
-    URL: jdbc:postgresql://localhost:5432/securitydb
+```env
+DB_URL=jdbc:postgresql://localhost:5432/securitydb
+DB_USERNAME=postgres
+DB_PASSWORD=manager
+```
+
+#### 2.1 The database connection is pre-configured in src/main/resources/application.properties:
+
+    Username: ${DB_USERNAME}
+    Password: ${DB_PASSWORD}
+    URL: ${DB_URL}
 
 3. Running the Application
 
