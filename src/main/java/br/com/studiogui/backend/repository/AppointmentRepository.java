@@ -46,7 +46,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     );
 
     @Query("SELECT COUNT(a) > 0 FROM Appointment a " +
-            "WHERE (a.professional.id = :professionalId OR a.client.id = :clientId) " +
+            "WHERE (a.professional.id = :professionalId OR (:clientId IS NOT NULL AND a.client.id = :clientId)) " +
             "AND a.status <> 'CANCELED' " +
             "AND ((a.dateTime < :endTime) AND (a.dateTime + a.service.durationMin MINUTE > :startTime))")
     boolean existsConflictingAppointment(

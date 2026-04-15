@@ -14,14 +14,14 @@ public record AppointmentDetailResponse(
         BigDecimal price,
 
         LocalDateTime startTime,
-        LocalDateTime endTime, // Calcularemos isso no Java
+        LocalDateTime endTime,
 
         AppointmentStatus status
 ) {
     public AppointmentDetailResponse(Appointment entity) {
         this(
                 entity.getId(),
-                entity.getClient().getName(),
+                entity.getClient() != null ? entity.getClient().getName() : entity.getGuestName(),
                 entity.getProfessional().getName(),
                 entity.getService().getName(),
                 entity.getService().getPrice(),

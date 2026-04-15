@@ -2,6 +2,7 @@ package br.com.studiogui.backend.controller;
 
 import br.com.studiogui.backend.config.JWTUserData;
 import br.com.studiogui.backend.controller.dto.request.CreateAppointmentRequest;
+import br.com.studiogui.backend.controller.dto.request.CreateGuestAppointmentRequest;
 import br.com.studiogui.backend.controller.dto.response.AppointmentDetailResponse;
 import br.com.studiogui.backend.service.AppointmentService;
 import jakarta.validation.Valid;
@@ -34,6 +35,19 @@ public class AppointmentController {
         AppointmentDetailResponse response = service.schedule(request, user.userId());
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+        return ResponseEntity.created(uri).body(response);
+    }
+
+    @PostMapping("/admin/guest")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AppointmentDetailResponse> adminScheduleGuest(
+            @RequestBody @Valid CreateGuestAppointmentRequest request) {
+
+        AppointmentDetailResponse response = service.scheduleGuest(request);
+        URI uri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/appointments/{id}")
                 .buildAndExpand(response.id())
                 .toUri();
         return ResponseEntity.created(uri).body(response);

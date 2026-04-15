@@ -1,6 +1,7 @@
 package br.com.studiogui.backend.service;
 
 import br.com.studiogui.backend.controller.dto.request.ChangeRoleRequest;
+import br.com.studiogui.backend.controller.dto.request.UpdatePasswordRequest;
 import br.com.studiogui.backend.controller.dto.response.UserResponse;
 import br.com.studiogui.backend.model.enums.UserRole;
 import jakarta.persistence.EntityNotFoundException;
@@ -62,6 +63,23 @@ public class UserService {
         }
         targetUser.setRole(data.role());
         userRepository.save(targetUser);
+    }
+
+    @Transactional
+    public void updatePassword(Long userId, UpdatePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("A senha atual está incorreta.");
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("A nova senha não pode ser igual à senha atual.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 
     @Transactional(readOnly = true)

@@ -54,7 +54,7 @@ public class AuthController {
         var userAndPass = new UsernamePasswordAuthenticationToken(request.username(), request.password());
         Authentication auth = authenticationManager.authenticate(userAndPass);
         if (auth.getPrincipal() instanceof User user) {
-            Long expiresIn = 3600L;
+            Long expiresIn = 2592000000L;
             String accessToken = tokenConfig.generateToken(user, expiresIn);
             return ResponseEntity.ok(new LoginResponse(accessToken, expiresIn));
         }

@@ -1,6 +1,7 @@
 package br.com.studiogui.backend.service;
 
 import br.com.studiogui.backend.controller.dto.request.CreateAppointmentRequest;
+import br.com.studiogui.backend.controller.dto.request.CreateGuestAppointmentRequest;
 import br.com.studiogui.backend.controller.dto.response.AppointmentDetailResponse;
 import br.com.studiogui.backend.model.Appointment;
 import br.com.studiogui.backend.model.SalonService;
@@ -170,6 +171,50 @@ public class AppointmentService {
         appointment.setDateTime(newStart);
         appointment.setStatus(AppointmentStatus.CONFIRMED);
         appointment.setObservation("Agendado via App");
+
+        appointmentRepository.save(appointment);
+
+        return new AppointmentDetailResponse(appointment);
+    }
+
+    @Transactional
+    public AppointmentDetailResponse scheduleGuest(CreateGuestAppointmentRequest data) {
+
+        User professional = userRepository.findById(data.professionalId())
+                .orElseThrow(() -> new EntityNotFoundException("Profissional não encontrado"));
+
+        SalonService service = serviceRepository.findById(data.serviceId())
+                .orElseThrow(() -> new EntityNotFoundException("Serviço não encontrado"));
+
+        if (!service.getActive()) {
+            throw new IllegalArgumentException("Este serviço não está mais disponível.");
+        }
+
+        LocalDateTime newStart = data.startTime();
+        LocalDateTime newEnd = newStart.plusMinutes(service.getDurationMin());
+
+        validateBusinessHours(newStart, newEnd);
+
+        boolean hasConflict = appointmentRepository.existsConflictingAppointment(
+                professional.getId(),
+                null,
+                newStart,
+                newEnd
+        );
+
+        if (hasConflict) {
+            throw new IllegalArgumentException("Conflito de horário! O profissional já possui agendamento neste intervalo.");
+        }
+
+        Appointment appointment = new Appointment();
+        appointment.setClient(null);
+        appointment.setGuestName(data.guestName());
+        appointment.setGuestPhone(data.guestPhone());
+        appointment.setProfessional(professional);
+        appointment.setService(service);
+        appointment.setDateTime(newStart);
+        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setObservation("Agendado no balcão (Cliente Avulso)");
 
         appointmentRepository.save(appointment);
 
