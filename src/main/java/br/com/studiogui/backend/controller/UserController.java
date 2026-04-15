@@ -2,6 +2,7 @@ package br.com.studiogui.backend.controller;
 
 import br.com.studiogui.backend.config.JWTUserData;
 import br.com.studiogui.backend.controller.dto.request.ChangeRoleRequest;
+import br.com.studiogui.backend.controller.dto.request.UpdatePasswordRequest;
 import br.com.studiogui.backend.controller.dto.response.UserResponse;
 import br.com.studiogui.backend.service.UserService;
 import jakarta.validation.Valid;
@@ -51,6 +52,15 @@ public class UserController {
             @PageableDefault(size = 10, sort = "name") Pageable pageable){
         var page = userService.findProfessional(pageable);
         return ResponseEntity.ok(page);
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<Void> updatePassword(
+            @RequestBody @Valid UpdatePasswordRequest request,
+            @AuthenticationPrincipal JWTUserData currentUser) {
+
+        userService.updatePassword(currentUser.userId(), request);
+        return ResponseEntity.noContent().build();
     }
 
 }
