@@ -9,9 +9,9 @@ services:
     expose:
       - "5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=manager
-      - POSTGRES_DB=securitydb
+      - POSTGRES_USER=${POSTGRES_DB_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_DB_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
 
