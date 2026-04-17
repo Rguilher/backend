@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        .email-body { font-family: 'Segoe UI', sans-serif; color: #333; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; padding: 20px; }
+        .header { border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+        .highlight { color: #D4AF37; font-weight: bold; }
+        .footer { font-size: 12px; color: #999; margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="email-body">
+    <div class="header">
+        <h2>Olá, <span th:text="${name}">Cliente</span>!</h2>
+    </div>
+    <p>Este é um lembrete de que seu horário no <strong>Studio Gui</strong> está chegando.</p>
+    <p>Serviço: <span class="highlight" th:text="${service}">Corte</span></p>
+    <p>Horário: <span class="highlight" th:text="${time}">15:00</span></p>
+    <p>Estamos preparando tudo para te receber!</p>
+    <p>Por favor, não responda a este e-mail. Para desmarcar ou tirar dúvidas, chame no nosso WhatsApp: (11) 9999-9999.</p>
+    <div class="footer">
+        <p>Studio Gui - Beleza e Bem-estar</p>
+    </div>
+</div>
+</body>
+</html>
