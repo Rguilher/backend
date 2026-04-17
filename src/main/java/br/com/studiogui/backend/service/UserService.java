@@ -1,11 +1,13 @@
 package br.com.studiogui.backend.service;
 
 import br.com.studiogui.backend.controller.dto.request.ChangeRoleRequest;
+import br.com.studiogui.backend.controller.dto.request.UpdatePasswordRequest;
 import br.com.studiogui.backend.controller.dto.response.UserResponse;
 import br.com.studiogui.backend.model.enums.UserRole;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -63,9 +65,32 @@ public class UserService {
         userRepository.save(targetUser);
     }
 
+    @Transactional
+    public void updatePassword(Long userId, UpdatePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("A senha atual está incorreta.");
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("A nova senha não pode ser igual à senha atual.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
     @Transactional(readOnly = true)
-    public Page<UserResponse> findAll(Pageable pageable) {
-        return userRepository.findAll(pageable)
+    public UserResponse findUser(String email) {
+        var user = userRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
+        return new UserResponse(user);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponse> findProfessional(Pageable pageable) {
+        return userRepository.findByRole(UserRole.PROFESSIONAL ,pageable)
                 .map(UserResponse::new);
     }
 }

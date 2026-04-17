@@ -21,7 +21,7 @@ public class Appointment {
 
 
     @ManyToOne
-    @JoinColumn(name = "client_id", nullable = false)
+    @JoinColumn(name = "client_id")
     private User client;
 
 
@@ -34,6 +34,12 @@ public class Appointment {
     @JoinColumn(name = "service_id", nullable = false)
     private SalonService service;
 
+    @Column(name = "guest_name")
+    private String guestName;
+
+    @Column(name = "guest_phone")
+    private String guestPhone;
+
     @Column(nullable = false)
     private LocalDateTime dateTime;
 
@@ -43,4 +49,7 @@ public class Appointment {
 
     @Column(columnDefinition = "TEXT")
     private String observation;
+
+    @Column(name = "reminder_sent", nullable = false)
+    private boolean reminderSent = false;
 }

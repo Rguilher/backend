@@ -1,6 +1,7 @@
 package br.com.studiogui.backend.service;
 
 import br.com.studiogui.backend.controller.dto.request.CreateAppointmentRequest;
+import br.com.studiogui.backend.controller.dto.request.CreateGuestAppointmentRequest;
 import br.com.studiogui.backend.controller.dto.response.AppointmentDetailResponse;
 import br.com.studiogui.backend.model.Appointment;
 import br.com.studiogui.backend.model.SalonService;
@@ -15,8 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -26,10 +29,10 @@ public class AppointmentService {
     private final UserRepository userRepository;
     private final SalonServiceRepository serviceRepository;
 
-    // Constantes de Regra de Negócio (Em projeto grande, iriam para application.properties)
     private static final int MIN_LEAD_TIME_MINUTES = 30;
     private static final LocalTime OPENING_TIME = LocalTime.of(8, 0);
     private static final LocalTime CLOSING_TIME = LocalTime.of(18, 0);
+    private static final int SLOT_DURATION_MINUTES = 45;
 
     public AppointmentService(AppointmentRepository appointmentRepository, UserRepository userRepository, SalonServiceRepository serviceRepository) {
         this.appointmentRepository = appointmentRepository;
@@ -37,6 +40,59 @@ public class AppointmentService {
         this.serviceRepository = serviceRepository;
     }
 
+    public List<LocalTime> getAvailability(Long professionalId, LocalDate date) {
+
+        if (date.isBefore(LocalDate.now())) {
+            return List.of();
+        }
+
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(23, 59, 59);
+
+        List<Appointment> existingAppointments = appointmentRepository.findByProfessionalAndDate(professionalId, startOfDay, endOfDay);
+
+        List<LocalTime> availableSlots = new ArrayList<>();
+        LocalTime currentSlot = OPENING_TIME;
+
+        while (!currentSlot.plusMinutes(SLOT_DURATION_MINUTES).isAfter(CLOSING_TIME)) {
+
+            LocalDateTime slotStart = date.atTime(currentSlot);
+            LocalDateTime slotEnd = slotStart.plusMinutes(SLOT_DURATION_MINUTES);
+
+            if (slotStart.isBefore(LocalDateTime.now().plusMinutes(MIN_LEAD_TIME_MINUTES))) {
+                currentSlot = currentSlot.plusMinutes(SLOT_DURATION_MINUTES);
+                continue;
+            }
+
+            boolean isBusy = false;
+
+            for (Appointment appointment : existingAppointments) {
+
+                if (appointment.getStatus() == AppointmentStatus.CANCELED) continue;
+
+                LocalDateTime appStart = appointment.getDateTime();
+
+                int appDuration = (appointment.getService() != null)
+                        ? appointment.getService().getDurationMin()
+                        : SLOT_DURATION_MINUTES;
+
+                LocalDateTime appEnd = appStart.plusMinutes(appDuration);
+
+                if (slotStart.isBefore(appEnd) && slotEnd.isAfter(appStart)) {
+                    isBusy = true;
+                    break;
+                }
+            }
+
+            if (!isBusy) {
+                availableSlots.add(currentSlot);
+            }
+
+            currentSlot = currentSlot.plusMinutes(SLOT_DURATION_MINUTES);
+        }
+
+        return availableSlots;
+    }
 
     @Transactional
     public AppointmentDetailResponse schedule(CreateAppointmentRequest data, Long clientId) {
@@ -64,11 +120,38 @@ public class AppointmentService {
 
         LocalDateTime newStart = data.startTime();
         LocalDateTime newEnd = newStart.plusMinutes(service.getDurationMin());
+
         if (newStart.isBefore(LocalDateTime.now().plusMinutes(MIN_LEAD_TIME_MINUTES))) {
-            throw new IllegalArgumentException
-                    ("O agendamento deve ser feito com no mínimo " + MIN_LEAD_TIME_MINUTES + " minutos de antecedência.");
+            throw new IllegalArgumentException("O agendamento deve ser feito com no mínimo " + MIN_LEAD_TIME_MINUTES + " minutos de antecedência.");
         }
         validateBusinessHours(newStart, newEnd);
+
+
+        LocalDateTime startOfDay = newStart.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = newStart.toLocalDate().atTime(23, 59, 59);
+
+        List<Appointment> clientAppointmentsToday = appointmentRepository
+                .findByClient_IdAndDateTimeBetween(clientId, startOfDay, endOfDay);
+
+        List<Appointment> activeAppointments = clientAppointmentsToday.stream()
+                .filter(a -> a.getStatus() != AppointmentStatus.CANCELED) // Ignora cancelados
+                .filter(a -> {
+                    boolean isPastConfirmed = a.getStatus() == AppointmentStatus.CONFIRMED
+                            && a.getDateTime().isBefore(LocalDateTime.now());
+                    return !isPastConfirmed;
+                })
+                .toList();
+
+        if (activeAppointments.size() >= 4) {
+            throw new IllegalArgumentException("Você atingiu o limite máximo de 4 agendamentos ativos para este dia.");
+        }
+
+        boolean serviceAlreadyBooked = activeAppointments.stream()
+                .anyMatch(a -> a.getService().getId().equals(service.getId()));
+
+        if (serviceAlreadyBooked) {
+            throw new IllegalArgumentException("Você já possui um agendamento para o serviço '" + service.getName() + "' nesta data.");
+        }
 
         boolean hasConflict = appointmentRepository.existsConflictingAppointment(
                 professional.getId(),
@@ -78,8 +161,7 @@ public class AppointmentService {
         );
 
         if (hasConflict) {
-            throw new IllegalArgumentException
-                    ("Conflito de horário! O profissional ou você já possuem agendamento neste intervalo.");
+            throw new IllegalArgumentException("Conflito de horário! O profissional ou você já possuem agendamento neste intervalo.");
         }
 
         Appointment appointment = new Appointment();
@@ -95,6 +177,49 @@ public class AppointmentService {
         return new AppointmentDetailResponse(appointment);
     }
 
+    @Transactional
+    public AppointmentDetailResponse scheduleGuest(CreateGuestAppointmentRequest data) {
+
+        User professional = userRepository.findById(data.professionalId())
+                .orElseThrow(() -> new EntityNotFoundException("Profissional não encontrado"));
+
+        SalonService service = serviceRepository.findById(data.serviceId())
+                .orElseThrow(() -> new EntityNotFoundException("Serviço não encontrado"));
+
+        if (!service.getActive()) {
+            throw new IllegalArgumentException("Este serviço não está mais disponível.");
+        }
+
+        LocalDateTime newStart = data.startTime();
+        LocalDateTime newEnd = newStart.plusMinutes(service.getDurationMin());
+
+        validateBusinessHours(newStart, newEnd);
+
+        boolean hasConflict = appointmentRepository.existsConflictingAppointment(
+                professional.getId(),
+                null,
+                newStart,
+                newEnd
+        );
+
+        if (hasConflict) {
+            throw new IllegalArgumentException("Conflito de horário! O profissional já possui agendamento neste intervalo.");
+        }
+
+        Appointment appointment = new Appointment();
+        appointment.setClient(null);
+        appointment.setGuestName(data.guestName());
+        appointment.setGuestPhone(data.guestPhone());
+        appointment.setProfessional(professional);
+        appointment.setService(service);
+        appointment.setDateTime(newStart);
+        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setObservation("Agendado no balcão (Cliente Avulso)");
+
+        appointmentRepository.save(appointment);
+
+        return new AppointmentDetailResponse(appointment);
+    }
 
     @Transactional
     public void cancelAppointment(Long appointmentId, Long userId) {
@@ -133,16 +258,14 @@ public class AppointmentService {
     }
 
     public List<AppointmentDetailResponse> listToday(Long userId) {
-        LocalDateTime start = LocalDateTime.now().toLocalDate().atStartOfDay(); // 00:00
-        LocalDateTime end = LocalDateTime.now().toLocalDate().atTime(23, 59, 59); // 23:59
-
+        LocalDateTime start = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime end = LocalDateTime.now().toLocalDate().atTime(23, 59, 59);
         return listByInterval(userId, start, end);
     }
 
     public List<AppointmentDetailResponse> listUpcomingWeek(Long userId) {
         LocalDateTime start = LocalDateTime.now();
         LocalDateTime end = start.plusDays(7).withHour(23).withMinute(59);
-
         return listByInterval(userId, start, end);
     }
 
@@ -151,12 +274,10 @@ public class AppointmentService {
         LocalDateTime start = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
         LocalDateTime end = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
                 .toLocalDate().atTime(23, 59, 59);
-
         return listByInterval(userId, start, end);
     }
 
     private void validateBusinessHours(LocalDateTime start, LocalDateTime end) {
-
         if (start.getDayOfWeek() == DayOfWeek.SUNDAY || start.getDayOfWeek() == DayOfWeek.MONDAY) {
             throw new IllegalArgumentException("O estabelecimento não abre às segundas-feiras e domingos.");
         }

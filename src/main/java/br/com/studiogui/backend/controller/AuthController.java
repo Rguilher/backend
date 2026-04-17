@@ -1,5 +1,8 @@
 package br.com.studiogui.backend.controller;
 
+import br.com.studiogui.backend.controller.dto.request.ForgotPasswordRequest;
+import br.com.studiogui.backend.controller.dto.request.ResetPasswordRequest;
+import br.com.studiogui.backend.service.PasswordRecoveryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,13 +32,15 @@ public class AuthController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final TokenConfig tokenConfig;
+    private final PasswordRecoveryService recoveryService;
 
     public AuthController(UserService userService, TokenConfig tokenConfig,
-        AuthenticationManager authenticationManager
+        AuthenticationManager authenticationManager, PasswordRecoveryService recoveryService
     ) {
         this.userService = userService;
         this.tokenConfig = tokenConfig;
         this.authenticationManager = authenticationManager;
+        this.recoveryService = recoveryService;
     }
 
     @GetMapping("/test")
@@ -49,7 +54,7 @@ public class AuthController {
         var userAndPass = new UsernamePasswordAuthenticationToken(request.username(), request.password());
         Authentication auth = authenticationManager.authenticate(userAndPass);
         if (auth.getPrincipal() instanceof User user) {
-            Long expiresIn = 3600L;
+            Long expiresIn = 2592000000L;
             String accessToken = tokenConfig.generateToken(user, expiresIn);
             return ResponseEntity.ok(new LoginResponse(accessToken, expiresIn));
         }
@@ -65,5 +70,17 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(
             new RegisterUserResponse(user.getName(), user.getEmail(), user.getPhone())
         );
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        recoveryService.requestPasswordRecovery(request.email());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        recoveryService.resetPassword(request.email(), request.code(), request.newPassword());
+        return ResponseEntity.ok().build();
     }
 }

@@ -2,7 +2,6 @@ package br.com.studiogui.backend.controller.dto.response;
 
 import br.com.studiogui.backend.model.Appointment;
 import br.com.studiogui.backend.model.enums.AppointmentStatus;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,18 +13,15 @@ public record AppointmentDetailResponse(
         String serviceName,
         BigDecimal price,
 
-        @JsonFormat(pattern = "dd/MM/yyyy HH:mm") // Formata bonito no JSON
         LocalDateTime startTime,
-
-        @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
-        LocalDateTime endTime, // Calcularemos isso no Java
+        LocalDateTime endTime,
 
         AppointmentStatus status
 ) {
     public AppointmentDetailResponse(Appointment entity) {
         this(
                 entity.getId(),
-                entity.getClient().getName(),
+                entity.getClient() != null ? entity.getClient().getName() : entity.getGuestName(),
                 entity.getProfessional().getName(),
                 entity.getService().getName(),
                 entity.getService().getPrice(),

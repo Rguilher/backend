@@ -13,16 +13,24 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findAllByClient(User client);
     List<Appointment> findAllByProfessional(User professional);
+    List<Appointment> findByClient_IdAndDateTimeBetween(Long clientId, LocalDateTime start, LocalDateTime end);
 
-    // 🔥 NOVO: Busca agendamentos de um profissional num intervalo de tempo (ex: no dia X)
-    // Usaremos isso para validar conflitos.
-    // "Mostre a agenda do Profissional X entre as 00:00 e as 23:59 da data tal"
     @Query("SELECT a FROM Appointment a " +
             "WHERE a.professional = :professional " +
-            "AND a.status <> 'CANCELED' " + // Ignora os cancelados (eles não ocupam vaga)
+            "AND a.status <> 'CANCELED' " +
             "AND a.dateTime BETWEEN :start AND :end")
     List<Appointment> findProfessionalAgenda(
             @Param("professional") User professional,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+    @Query("SELECT a FROM Appointment a " +
+            "WHERE a.professional.id = :professionalId " +
+            "AND a.status <> 'CANCELED' " + // Garante que cancelados não "ocupem" lugar
+            "AND a.dateTime >= :start AND a.dateTime < :end")
+    List<Appointment> findByProfessionalAndDate(
+            @Param("professionalId") Long professionalId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
@@ -38,7 +46,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     );
 
     @Query("SELECT COUNT(a) > 0 FROM Appointment a " +
-            "WHERE (a.professional.id = :professionalId OR a.client.id = :clientId) " +
+            "WHERE (a.professional.id = :professionalId OR (:clientId IS NOT NULL AND a.client.id = :clientId)) " +
             "AND a.status <> 'CANCELED' " +
             "AND ((a.dateTime < :endTime) AND (a.dateTime + a.service.durationMin MINUTE > :startTime))")
     boolean existsConflictingAppointment(
@@ -46,5 +54,15 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("clientId") Long clientId,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
+    );
+
+    @Query("SELECT a FROM Appointment a " +
+            "WHERE a.dateTime BETWEEN :start AND :end " +
+            "AND a.status = 'CONFIRMED' " +
+            "AND a.client IS NOT NULL " +
+            "AND a.reminderSent = false")
+    List<Appointment> findUpcomingAppointmentsNotNotified(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
     );
 }

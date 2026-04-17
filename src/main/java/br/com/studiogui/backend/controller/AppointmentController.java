@@ -2,15 +2,20 @@ package br.com.studiogui.backend.controller;
 
 import br.com.studiogui.backend.config.JWTUserData;
 import br.com.studiogui.backend.controller.dto.request.CreateAppointmentRequest;
+import br.com.studiogui.backend.controller.dto.request.CreateGuestAppointmentRequest;
 import br.com.studiogui.backend.controller.dto.response.AppointmentDetailResponse;
 import br.com.studiogui.backend.service.AppointmentService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -25,7 +30,7 @@ public class AppointmentController {
 
     @PostMapping
     public ResponseEntity<AppointmentDetailResponse> schedule(@RequestBody @Valid CreateAppointmentRequest request,
-            @AuthenticationPrincipal JWTUserData user) {
+                                                              @AuthenticationPrincipal JWTUserData user) {
 
         AppointmentDetailResponse response = service.schedule(request, user.userId());
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -35,9 +40,36 @@ public class AppointmentController {
         return ResponseEntity.created(uri).body(response);
     }
 
+    @PostMapping("/admin/guest")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AppointmentDetailResponse> adminScheduleGuest(
+            @RequestBody @Valid CreateGuestAppointmentRequest request) {
+
+        AppointmentDetailResponse response = service.scheduleGuest(request);
+        URI uri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/appointments/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+        return ResponseEntity.created(uri).body(response);
+    }
+
+    @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AppointmentDetailResponse> adminSchedule(
+            @RequestBody @Valid CreateAppointmentRequest request,
+            @RequestParam Long userId) {
+
+        AppointmentDetailResponse response = service.schedule(request, userId);
+        URI uri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/appointments/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+        return ResponseEntity.created(uri).body(response);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(@PathVariable Long id,
-            @AuthenticationPrincipal JWTUserData user) {
+                                       @AuthenticationPrincipal JWTUserData user) {
 
         service.cancelAppointment(id, user.userId());
         return ResponseEntity.noContent().build();
@@ -61,5 +93,13 @@ public class AppointmentController {
             @AuthenticationPrincipal JWTUserData user) {
         List<AppointmentDetailResponse> list = service.listCurrentMonth(user.userId());
         return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/availability")
+    public ResponseEntity<List<LocalTime>> getAvailability(
+            @RequestParam Long professionalId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<LocalTime> slots = service.getAvailability(professionalId, date);
+        return ResponseEntity.ok(slots);
     }
 }
