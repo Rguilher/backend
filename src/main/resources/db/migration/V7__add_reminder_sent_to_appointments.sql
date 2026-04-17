@@ -1,0 +1,1 @@
+ALTER TABLE tb_appointments ADD COLUMN reminder_sent BOOLEAN NOT NULL DEFAULT FALSE;

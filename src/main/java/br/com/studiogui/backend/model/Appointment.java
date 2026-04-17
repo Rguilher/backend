@@ -49,4 +49,7 @@ public class Appointment {
 
     @Column(columnDefinition = "TEXT")
     private String observation;
+
+    @Column(name = "reminder_sent", nullable = false)
+    private boolean reminderSent = false;
 }

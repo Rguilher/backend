@@ -55,4 +55,14 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
+
+    @Query("SELECT a FROM Appointment a " +
+            "WHERE a.dateTime BETWEEN :start AND :end " +
+            "AND a.status = 'CONFIRMED' " +
+            "AND a.client IS NOT NULL " +
+            "AND a.reminderSent = false")
+    List<Appointment> findUpcomingAppointmentsNotNotified(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }
