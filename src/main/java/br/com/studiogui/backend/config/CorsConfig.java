@@ -9,10 +9,13 @@ public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // Permite todas as rotas
-                .allowedOrigins("http://localhost:4200") // URL do seu Front (Vite/React/Angular)
-                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // Métodos permitidos
-                .allowedHeaders("*") // Permite todos os headers (importante para o Authorization)
+        registry.addMapping("/**")
+                .allowedOrigins(
+                        "http://localhost:4200",
+                        "https://studioguihair.com.br",
+                        "https://www.studioguihair.com.br")
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
                 .allowCredentials(true);
     }
 }
