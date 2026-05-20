@@ -24,22 +24,6 @@ public class BackendApplication {
 			@Value("${spring.mail.password:NOT_FOUND}") String mailPass,
 			UserRepository userRepository, PasswordEncoder encoder) {
 		return args -> {
-			String adminEmail = "renan.henri90@icloud.com";
-			if (!userRepository.findUserByEmail(adminEmail).isPresent()) {
-				User admin = new User();
-				admin.setName("Administrador Root");
-				admin.setEmail(adminEmail);
-				admin.setPassword(encoder.encode("SalaoSenhas12"));
-				admin.setPhone("1193980499");
-				admin.setRole(UserRole.ADMIN);
-				admin.setRoot(true);
-				userRepository.save(admin);
-				System.out.println("✅ Usuário Admin Root criado com sucesso no banco de dados!");
-			}
-			else {
-				System.out.println("⚡ Usuário Admin Root já existe. Pulando criação.");
-			}
-
 
 			System.out.println("========== EMAIL CONFIGURATION CHECK ==========");
 			System.out.println("MAIL_USERNAME: " + mailUser);
