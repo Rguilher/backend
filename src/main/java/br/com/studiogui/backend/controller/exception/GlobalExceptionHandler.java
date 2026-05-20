@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -45,5 +46,17 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         request.getRequestURI())
         );
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ExceptionDTO> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(
+                        new ExceptionDTO("E-mail ou senha incorretos.",
+                        HttpStatus.UNAUTHORIZED.name(),
+                        LocalDateTime.now(),
+                        request.getRequestURI()
+                        ));
     }
 }

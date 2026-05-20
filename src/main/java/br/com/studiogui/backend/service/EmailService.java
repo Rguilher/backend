@@ -3,6 +3,7 @@ package br.com.studiogui.backend.service;
 import br.com.studiogui.backend.model.Appointment;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,8 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
-    private String senderEmail = "agendamentos@studioguihair.com.br";
+    @Value("${EMAIL_SENDER}")
+    private String senderEmail;
 
     public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine) {
         this.mailSender = mailSender;
