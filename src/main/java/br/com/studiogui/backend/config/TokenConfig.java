@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import br.com.studiogui.backend.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,16 +24,21 @@ import br.com.studiogui.backend.model.User;
 @Component
 public class TokenConfig {
 
-    // WARNING: Hardcoded secret for simulation purposes only.
-    // In production, fetch this from environment variables or a vault.
-    // Using for tests.
-    private String secret = "secret";
+    @Value("${JWT_SECRET:testsecret}")
+    private String salt;
+
     private final UserRepository userRepository;
-    Algorithm algorithm = Algorithm.HMAC256(secret);
+    Algorithm algorithm;
 
     public TokenConfig(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
+
+    @PostConstruct
+    public void init() {
+        this.algorithm = Algorithm.HMAC256(salt);
+    }
+
 
     public String generateToken(User user, Long expiresIn) {
 	    List<String> roles = user.getAuthorities().stream()
