@@ -17,7 +17,7 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
-    private String senderEmail = "onboarding@resend.dev";
+    private String senderEmail = "agendamentos@studioguihair.com.br";
 
     public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine) {
         this.mailSender = mailSender;

@@ -29,18 +29,12 @@ public class BackendApplication {
 				User admin = new User();
 				admin.setName("Administrador Root");
 				admin.setEmail(adminEmail);
-
 				admin.setPassword(encoder.encode("SalaoSenhas12"));
-
 				admin.setPhone("1193980499");
-
 				admin.setRole(UserRole.ADMIN);
-
 				admin.setRoot(true);
-
 				userRepository.save(admin);
 				System.out.println("✅ Usuário Admin Root criado com sucesso no banco de dados!");
-
 			}
 			else {
 				System.out.println("⚡ Usuário Admin Root já existe. Pulando criação.");
