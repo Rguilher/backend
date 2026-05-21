@@ -60,7 +60,7 @@ public class UserServiceTest {
 
         serviceService.deleteService(id);
 
-        assertFalse(service.getActive()); // Verifica se virou false
-        verify(repository).save(service); // Verifica se salvou a alteração
+        assertFalse(service.getActive());
+        verify(repository).save(service);
     }
 }
