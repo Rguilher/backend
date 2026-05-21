@@ -4,6 +4,7 @@ import br.com.studiogui.backend.controller.dto.request.CreateServiceRequest;
 import br.com.studiogui.backend.model.SalonService;
 import br.com.studiogui.backend.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,9 @@ import java.util.List;
 public class SalonServiceService {
 
     private final SalonServiceRepository repository;
+
+    @Value("${business.slot-duration-minutes:45}")
+    private int slotDurationMinutes;
 
     public SalonServiceService(SalonServiceRepository repository) {
         this.repository = repository;
@@ -28,7 +32,7 @@ public class SalonServiceService {
         newService.setName(request.name());
         newService.setDescription(request.description());
         newService.setPrice(request.price());
-        newService.setDurationMin(45);
+        newService.setDurationMin(slotDurationMinutes);
         newService.setActive(true);
 
        return repository.save(newService);

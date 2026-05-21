@@ -12,6 +12,7 @@ import br.com.studiogui.backend.repository.AppointmentRepository;
 import br.com.studiogui.backend.repository.SalonServiceRepository;
 import br.com.studiogui.backend.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,10 +30,17 @@ public class AppointmentService {
     private final UserRepository userRepository;
     private final SalonServiceRepository serviceRepository;
 
-    private static final int MIN_LEAD_TIME_MINUTES = 30;
-    private static final LocalTime OPENING_TIME = LocalTime.of(8, 0);
-    private static final LocalTime CLOSING_TIME = LocalTime.of(18, 0);
-    private static final int SLOT_DURATION_MINUTES = 45;
+    @Value("${business.min-lead-time-minutes:30}")
+    private int MIN_LEAD_TIME_MINUTES;
+
+    @Value("${business.opening-time:08:00}")
+    private LocalTime OPENING_TIME;
+
+    @Value("${business.closing-time:18:00}")
+    private LocalTime CLOSING_TIME;
+
+    @Value("${business.slot-duration-minutes:45}")
+    private int SLOT_DURATION_MINUTES;
 
     public AppointmentService(AppointmentRepository appointmentRepository, UserRepository userRepository, SalonServiceRepository serviceRepository) {
         this.appointmentRepository = appointmentRepository;
