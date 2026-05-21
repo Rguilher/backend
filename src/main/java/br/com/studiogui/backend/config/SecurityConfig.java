@@ -31,7 +31,6 @@ public class SecurityConfig {
 
         return http
                 .csrf(csrf -> csrf.disable())
-                // TODO: Enable and configure CORS properly before production
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS))

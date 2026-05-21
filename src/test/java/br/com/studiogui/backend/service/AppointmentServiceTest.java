@@ -84,7 +84,6 @@ class AppointmentServiceTest {
         when(userRepository.findById(professional.getId())).thenReturn(Optional.of(professional));
         when(serviceRepository.findById(service.getId())).thenReturn(Optional.of(service));
 
-        // Simula que o cliente não tem nenhum agendamento no dia
         when(appointmentRepository.findByClient_IdAndDateTimeBetween(any(), any(), any())).thenReturn(Collections.emptyList());
         when(appointmentRepository.existsConflictingAppointment(any(), any(), any(), any())).thenReturn(false);
 
