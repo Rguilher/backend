@@ -30,16 +30,16 @@ public class AppointmentService {
     private final UserRepository userRepository;
     private final SalonServiceRepository serviceRepository;
 
-    @Value("${business.min-lead-time-minutes:30}")
+    @Value("${MIN_LEAD_TIME_MINUTES:30}")
     private int MIN_LEAD_TIME_MINUTES;
 
-    @Value("${business.opening-time:08:00}")
+    @Value("${OPENING_TIME:09:00}")
     private LocalTime OPENING_TIME;
 
-    @Value("${business.closing-time:18:00}")
+    @Value("${CLOSING_TIME:19:00}")
     private LocalTime CLOSING_TIME;
 
-    @Value("${business.slot-duration-minutes:45}")
+    @Value("${SLOT_DURATION_MINUTES:45}")
     private int SLOT_DURATION_MINUTES;
 
     public AppointmentService(AppointmentRepository appointmentRepository, UserRepository userRepository, SalonServiceRepository serviceRepository) {

@@ -27,7 +27,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     @Query("SELECT a FROM Appointment a " +
             "WHERE a.professional.id = :professionalId " +
-            "AND a.status <> 'CANCELED' " + // Garante que cancelados não "ocupem" lugar
+            "AND a.status <> 'CANCELED' " +
             "AND a.dateTime >= :start AND a.dateTime < :end")
     List<Appointment> findByProfessionalAndDate(
             @Param("professionalId") Long professionalId,

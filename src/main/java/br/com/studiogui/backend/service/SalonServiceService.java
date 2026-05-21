@@ -15,7 +15,7 @@ public class SalonServiceService {
 
     private final SalonServiceRepository repository;
 
-    @Value("${business.slot-duration-minutes:45}")
+    @Value("${SLOT_DURATION_MINUTES:45}")
     private int slotDurationMinutes;
 
     public SalonServiceService(SalonServiceRepository repository) {
