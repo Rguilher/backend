@@ -2,6 +2,8 @@ package br.com.studiogui.backend.service;
 
 import br.com.studiogui.backend.model.User;
 import br.com.studiogui.backend.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,12 +14,17 @@ import java.util.Random;
 
 @Service
 public class PasswordRecoveryService {
+
+    private static final Logger log = LoggerFactory.getLogger(PasswordRecoveryService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    public PasswordRecoveryService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public PasswordRecoveryService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -25,6 +32,7 @@ public class PasswordRecoveryService {
         Optional<User> optionalUser = userRepository.findUserByEmail(email);
 
         if (optionalUser.isEmpty()) {
+            log.warn("Tentativa de recuperação de senha para e-mail não cadastrado: {}", email);
             return;
         }
 
@@ -35,11 +43,8 @@ public class PasswordRecoveryService {
         user.setRecoveryCodeExpiry(LocalDateTime.now().plusMinutes(10));
         userRepository.save(user);
 
-        // TODO: Para o MVP, simular envio. No futuro, plugar AWS SES, SendGrid ou JavaMailSender.
-        System.out.println("=======================================");
-        System.out.println("E-MAIL ENVIADO PARA: " + email);
-        System.out.println("CÓDIGO DE RECUPERAÇÃO: " + code);
-        System.out.println("=======================================");
+        emailService.sendPasswordRecoveryEmail(email, code);
+        log.info("Processo de recuperação de senha iniciado para o usuário ID: {}", user.getId());
     }
 
     @Transactional
@@ -48,10 +53,12 @@ public class PasswordRecoveryService {
                 .orElseThrow(() -> new IllegalArgumentException("Dados inválidos."));
 
         if (user.getRecoveryCode() == null || !user.getRecoveryCode().equals(code)) {
+            log.warn("Tentativa falha de redefinição de senha com código inválido para o usuário ID: {}", user.getId());
             throw new IllegalArgumentException("Código inválido ou não solicitado.");
         }
 
         if (user.getRecoveryCodeExpiry().isBefore(LocalDateTime.now())) {
+            log.warn("Tentativa de uso de código de recuperação expirado para o usuário ID: {}", user.getId());
             throw new IllegalArgumentException("Código expirado. Solicite um novo.");
         }
 
@@ -59,6 +66,8 @@ public class PasswordRecoveryService {
         user.setRecoveryCode(null);
         user.setRecoveryCodeExpiry(null);
         userRepository.save(user);
+
+        log.info("Senha redefinida com sucesso para o usuário ID: {}", user.getId());
     }
 
     private String generate6DigitCode() {
