@@ -257,7 +257,7 @@ public class AppointmentService {
         appointmentRepository.save(appointment);
     }
 
-    private List<AppointmentDetailResponse> listByInterval(Long userId, LocalDateTime start, LocalDateTime end) {
+    public List<AppointmentDetailResponse> listByInterval(Long userId, LocalDateTime start, LocalDateTime end) {
         List<Appointment> appointments = appointmentRepository.findByUserAndDateRange(userId, start, end);
 
         return appointments.stream()
