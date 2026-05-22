@@ -102,4 +102,18 @@ public class AppointmentController {
         List<LocalTime> slots = service.getAvailability(professionalId, date);
         return ResponseEntity.ok(slots);
     }
+
+    @GetMapping("/period")
+    public ResponseEntity<List<AppointmentDetailResponse>> getMyAgendaByPeriod(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+            @AuthenticationPrincipal JWTUserData user) {
+
+        List<AppointmentDetailResponse> list = service.listByInterval(
+                user.userId(),
+                start.atStartOfDay(),
+                end.atTime(23, 59, 59)
+        );
+        return ResponseEntity.ok(list);
+    }
 }
