@@ -1,6 +1,6 @@
 <h1>Salon Service Management API</h1>
 
-This is a robust backend REST API developed for Studio Gui, a professional salon management system. It provides a complete solution for scheduling services, managing professionals, and handling user authentication.
+This is a robust backend REST API developed for a professional salon management system. It provides a complete solution for scheduling services, managing professionals, and handling user authentication.
 <h2>Technologies</h2>
 
 This project utilizes modern software engineering practices and the following technology stack:
