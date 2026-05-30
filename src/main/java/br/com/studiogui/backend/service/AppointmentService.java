@@ -86,6 +86,9 @@ public class AppointmentService {
 
                 LocalDateTime appEnd = appStart.plusMinutes(appDuration);
 
+                // Verifica se há sobreposição (overlap) de tempo:
+                // O slot em avaliação começa antes do agendamento atual terminar
+                // E termina depois do agendamento atual começar.
                 if (slotStart.isBefore(appEnd) && slotEnd.isAfter(appStart)) {
                     isBusy = true;
                     break;
@@ -150,6 +153,8 @@ public class AppointmentService {
                 })
                 .toList();
 
+        // Regra de negócio: Previne que um cliente mal-intencionado reserve
+        // a agenda inteira do salão, limitando a 4 serviços por dia.
         if (activeAppointments.size() >= 4) {
             throw new IllegalArgumentException("Você atingiu o limite máximo de 4 agendamentos ativos para este dia.");
         }

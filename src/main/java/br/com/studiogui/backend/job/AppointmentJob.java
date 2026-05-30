@@ -19,6 +19,7 @@ public class AppointmentJob {
         this.emailService = emailService;
     }
 
+    // Executa a cada 10 minutos
     @Scheduled(cron = "0 */10 * * * *")
     public void checkUpcomingAppointments() {
         LocalDateTime now = LocalDateTime.now();

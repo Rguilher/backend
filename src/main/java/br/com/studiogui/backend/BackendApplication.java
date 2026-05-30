@@ -17,23 +17,4 @@ public class BackendApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(BackendApplication.class, args);
 	}
-
-	@Bean
-	public CommandLineRunner runner(
-			@Value("${spring.mail.username:NOT_FOUND}") String mailUser,
-			@Value("${spring.mail.password:NOT_FOUND}") String mailPass,
-			UserRepository userRepository, PasswordEncoder encoder) {
-		return args -> {
-
-			System.out.println("========== EMAIL CONFIGURATION CHECK ==========");
-			System.out.println("MAIL_USERNAME: " + mailUser);
-
-			if (mailPass.equals("NOT_FOUND")) {
-				System.err.println("MAIL_PASSWORD: NOT CONFIGURED! ❌");
-			} else {
-				System.out.println("MAIL_PASSWORD: CONFIGURED (HIDDEN) ✅");
-			}
-			System.out.println("===============================================");
-		};
-	}
 }
