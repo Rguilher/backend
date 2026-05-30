@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -21,6 +20,7 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+
     @Value("${EMAIL_SENDER}")
     private String senderEmail;
 
@@ -29,8 +29,7 @@ public class EmailService {
         this.templateEngine = templateEngine;
     }
 
-
-    @Async("emailTaskExecutor")
+    // Removido o @Async
     public void sendPasswordRecoveryEmail(String toEmail, String code) {
         try {
             log.info("Iniciando envio do código de recuperação para o e-mail: {}", toEmail);
@@ -54,10 +53,11 @@ public class EmailService {
 
         } catch (MessagingException | UnsupportedEncodingException e) {
             log.error("Erro crítico ao enviar e-mail de recuperação para {}. Motivo: {}", toEmail, e.getMessage());
+            // Agora disparamos o erro para que a requisição HTTP falhe (Erro 500)
+            throw new RuntimeException("Falha de comunicação com o servidor de e-mails. Tente novamente mais tarde.");
         }
     }
 
-    @Async("emailTaskExecutor")
     public void sendAppointmentReminder(Appointment appointment) {
         try {
             log.info("Enviando lembrete de agendamento para o cliente: {}", appointment.getClient().getEmail());
